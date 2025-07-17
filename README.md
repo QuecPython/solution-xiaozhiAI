@@ -4,10 +4,10 @@
 
 - [Introduction](#Introduction)
 - [Features](#Features)
-- [Quick Start](#Quick Start)
+- [Quick_Start](#Quick_Start)
   - [Prerequisites](#Prerequisites)
   - [Installation](#Installation)
-  - [Running the Application](#Running the Application)
+  - [Running_Application](#Running_Application)
 - [Directory Structure](#Directory Structure)
 - [Contributing](#Contributing)
 - [License](#License)
@@ -25,7 +25,7 @@ This demo uses an AI development board equipped with the EC800MCNLE module.
 - Supports keyword-based voice wake-up.
 - Uses Python for easy secondary development.
 
-## Quick Start
+## Quick_Start
 
 ### Prerequisites
 
@@ -53,7 +53,7 @@ Before getting started, ensure you have the following prerequisites:
 2. **Flash the Firmware:**
    Follow the [instructions](https://python.quectel.com/doc/Application_guide/zh/dev-tools/QPYcom/qpycom-dw.html#%E4%B8%8B%E8%BD%BD%E5%9B%BA%E4%BB%B6) to flash the firmware onto the development board.
 
-### Running the Application
+### Running_Application
 
 1. **Hardware Connection:**
    This demo uses the Quectel AI development board. Contact Quectel if needed. Connect the hardware as shown below:
