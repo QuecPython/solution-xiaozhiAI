@@ -8,7 +8,6 @@
   - [Prerequisites](#Prerequisites)
   - [Installation](#Installation)
   - [Running_Application](#Running_Application)
-- [Directory Structure](#Directory Structure)
 - [Contributing](#Contributing)
 - [License](#License)
 - [Support](#Support)
