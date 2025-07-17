@@ -19,7 +19,7 @@ logger = getLogger(__name__)
 
 class AudioManager(object):
 
-    def __init__(self, channel=0, volume=8, pa_number=29):
+    def __init__(self, channel=0, volume=11, pa_number=29):
         self.aud = audio.Audio(channel)  # 初始化音频播放通道
         self.aud.set_pa(pa_number)
         self.aud.setVolume(volume)  # 设置音量
