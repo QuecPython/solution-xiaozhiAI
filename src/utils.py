@@ -41,6 +41,9 @@ class AudioManager(object):
 
     def play(self, file):
         self.aud.play(0, 1, file)
+        
+    def stop(self):
+        return self.aud.stopAll()
 
     # ========= opus ====================
 

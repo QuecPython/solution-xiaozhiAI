@@ -156,6 +156,8 @@ class Application(object):
                     if self.__voice_activity_event.is_set():
                         # 有人声
                         if not is_listen_flag:
+                            self.audio_manager.stop()
+                            # logger.debug("Clear the audio cache")
                             self.__protocol.listen("start")
                             is_listen_flag = True
                         self.__protocol.send(data)
