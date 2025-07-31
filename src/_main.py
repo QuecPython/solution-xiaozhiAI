@@ -136,12 +136,18 @@ class Application(object):
         self.audio_manager.stop_vad()
 
     def __working_thread_handler(self):
-        t = Thread(target=self.__chat_process)
-        t.start(stack_size=64)
-        self.__keyword_spotting_event.wait()
-        self.stop_kws()
-        t.join()
-        self.start_kws()
+        while True:
+            try:
+                if self.__keyword_spotting_event.is_set():
+                    self.stop_kws()
+                    t = Thread(target=self.__chat_process)
+                    t.start(stack_size=64)
+                    t.join()
+                    self.start_kws()
+            except Exception as e:
+                logger.error("Exception in working thread: {}".format(repr(e)))
+            finally:
+                utime.sleep_ms(1000)
 
     def __chat_process(self):
         self.start_vad()
@@ -157,7 +163,7 @@ class Application(object):
                         # 有人声
                         if not is_listen_flag:
                             self.audio_manager.stop()
-                            # logger.debug("Clear the audio cache")
+                            # logger.debug("Clear the audio cache:清除播放缓存{}".format(self.audio_manager.stop()))
                             self.__protocol.listen("start")
                             is_listen_flag = True
                         self.__protocol.send(data)

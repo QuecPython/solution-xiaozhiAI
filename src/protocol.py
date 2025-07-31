@@ -136,7 +136,7 @@ class WebSocketClient(object):
 
         try:
             self.__recv_thread = Thread(target=self.__recv_thread_worker)
-            self.__recv_thread.start(stack_size=64)
+            self.__recv_thread.start(stack_size=16)
         except Exception as e:
             __client__.close()
             logger.error("{} connect failed, Exception details: {}".format(self, repr(e)))
@@ -193,6 +193,10 @@ class WebSocketClient(object):
     def recv(self):
         """receive data from server, return None or "" means disconnection"""
         data = self.cli.recv()
+        if type(data) == str:
+            data_dict = json.loads(data)
+            text_value = data_dict.get("text")
+            print(text_value)
         # logger.debug("recv data: ", data)
         return data
 
@@ -206,7 +210,7 @@ class WebSocketClient(object):
                     "format": "opus",
                     "sample_rate": 16000,
                     "channels": 1,
-                    "frame_duration": 80
+                    "frame_duration": 100
                 },
                 "features": {
                     "consistent_sample_rate": True
