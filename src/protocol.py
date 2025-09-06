@@ -5,6 +5,7 @@ import uwebsocket as ws
 from usr.threading import Thread, Condition
 from usr.logging import getLogger
 import sys_bus
+from usr.OTA_test import OTA
 
 
 
@@ -72,7 +73,7 @@ class WebSocketClient(object):
         self.__audio_message_handler = None
         self.__json_message_handler = None
         self.__last_text_value = None
-    
+        self.ota = OTA(mac=self.get_mac_address())
     def __str__(self):
         return "{}(host=\"{}\")".format(type(self).__name__, self.host)
 
@@ -138,6 +139,7 @@ class WebSocketClient(object):
         )
 
         try:
+
             self.__recv_thread = Thread(target=self.__recv_thread_worker)
             self.__recv_thread.start(stack_size=64)
         except Exception as e:
