@@ -6,6 +6,7 @@ from usr.threading import Thread, Condition
 from usr.logging import getLogger
 import sys_bus
 from usr.OTA_test import OTA
+import gc
 
 
 
@@ -214,6 +215,7 @@ class WebSocketClient(object):
             # 对比 text_value 和上次的值是否相同
             if text_value != self.__last_text_value and text_value is not None:
                 print(text_value)  # 仅在不同时打印
+                print("内存：",gc.mem_free())
                 self.__last_text_value = text_value  # 更新为最新的 text_value
         # logger.debug("recv data: ", data)
         return data
@@ -233,7 +235,8 @@ class WebSocketClient(object):
                     "frame_duration": 100
                 },
                 "features": {
-                    "consistent_sample_rate": True
+                    "consistent_sample_rate": True,
+                    "mcpu": True
                 }
             }
         )
@@ -306,3 +309,137 @@ class WebSocketClient(object):
                 ).to_bytes()
             )
 
+# ...existing code...
+
+    def send_mcp(self, payload, session_id=""):
+        """
+        发送标准MCP消息,payload为JSON-RPC 2.0格式字典
+        """
+        with self.__resp_helper:
+            self.send(
+                JsonMessage(
+                    {
+                        "session_id": session_id,
+                        "type": "mcp",
+                        "payload": payload
+                    }
+                ).to_bytes()        
+            )
+
+    def mcp_initialize(self, capabilities=None, session_id="", req_id=1):
+        """
+        发送MCP initialize响应
+        """
+        payload = {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "protocolVersion": "2025-9-03",
+                "capabilities": {
+                    "tools":{},
+                    "notifications": {}
+                },
+                "serverInfo": {
+                "name": 'xiaozhi-mqtt-client',
+                "version": "1.0.0"
+            }
+        }
+        }  
+        self.send_mcp(payload, session_id)
+    
+    def mcp_tools_list(self, cursor="", session_id="", req_id=2):
+        """
+        发送MCP tools/list响应请求
+        """
+        payload = {
+            "jsonrpc": "2.0",
+            "id": req_id,
+            "result": {
+                "tools": [
+                {
+                    "name": "self.setvolume_down()",
+                    "description": "只通过调用setvolume_down方法来控制音量变小,接收到回应后会播报当前音量大小",
+                    "inputSchema": {}
+                },
+                {
+                    "name": "self.setvolume_up()",
+                    "description": "只通过调用setvolume_up方法来控制音量变大,接收到回应后会播报当前音量大小",
+                    "inputSchema": {}
+                },
+                {
+                    "name": "self.setvolume_close()",
+                    "description": "只通过调用setvolume_close方法来静音,接收到回应后会播报当前音量大小",
+                    "inputSchema": {}
+                },
+                ],
+            }
+            }
+        
+        self.send_mcp(payload, session_id)
+        
+    def mcp_tools_call(self, session_id="", req_id="", error=None, tool_name=""):
+        """
+        发送MCP tools/call响应
+        :param error: 如果为None则返回成功响应,否则返回错误响应(字典,包含code和message)
+        """
+        if error is None:
+            if tool_name == "self.setvolume_down()":
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            { "type": "text", "text": "音量已调小 "}
+                        ],
+                        "isError": False
+                    }
+                }
+            elif tool_name == "self.setvolume_up()":
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            { "type": "text", "text": "音量已调大" }
+                        ],
+                        "isError": False
+                    }
+                }
+            elif tool_name == "self.setvolume_close()":
+                payload = {
+                    "jsonrpc": "2.0",
+                    "id": req_id,
+                    "result": {
+                        "content": [
+                            { "type": "text", "text": "已静音" }
+                        ],
+                        "isError": False
+                    }
+                }
+        else:
+            payload = {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "error": {
+                    "code": error.get("code", -32601),
+                    "message": error.get("message", "Unknown error")
+                }
+            }
+        
+        self.send_mcp(payload, session_id)
+        
+    def mcp_notify(self, method, params, session_id=""):
+        """
+        设备主动发送MCP通知  
+        """
+        payload = {
+            "jsonrpc": "2.0",
+            "method":  "notifications/state_changed",
+            "params": {
+                "newState": "idle",
+                "oldState": "connecting"
+                    }
+        }
+        self.send_mcp(payload, session_id)
+
+# ...existing code...  

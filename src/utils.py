@@ -25,8 +25,27 @@ class AudioManager(object):
         self.aud.setVolume(volume)  # 设置音量
         self.aud.setCallback(self.audio_cb)
         self.rec = audio.Record(channel)
-        self.rec.gain_set(4,9)
+        self.rec.gain_set(3,9)
         self.__skip = 0
+        
+    def setvolume_down(self):
+        global volume
+        volume -= 1
+        if volume < 0: volume = 0
+        self.aud.setVolume(volume)
+        return volume
+        
+    def setvolume_up(self):
+        global volume
+        volume += 1
+        if volume > 11: volume = 11
+        self.aud.setVolume(volume)
+        return volume
+    
+    def setvolume_close(self):
+        self.aud.setVolume(0)
+        volume = 0
+        return volume
 
     # ========== 音频文件 ====================
 
@@ -75,7 +94,8 @@ class AudioManager(object):
                 self.__skip += 1
                 return
             return cb(state)
-        self.rec.vad_set_callback(wrapper)
+        self._callable = wrapper
+        self.rec.vad_set_callback(self._callable)
 
     def end_cb(self, para):
         if(para[0] == "stream"):
