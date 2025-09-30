@@ -7,6 +7,7 @@ from usr.protocol import WebSocketClient
 from usr.utils import ChargeManager, AudioManager, NetManager, TaskManager
 from usr.threading import Thread, Event, Condition
 from usr.logging import getLogger
+import ujson as json
 
 
 logger = getLogger(__name__)
@@ -74,6 +75,9 @@ class Application(object):
 
     def __init__(self):
         # 初始化唤醒按键
+        self.gpio19 =Pin(Pin.GPIO19, Pin.OUT, Pin.PULL_DISABLE, 1)
+        self.upsetvolume = ExtInt(ExtInt.GPIO47, ExtInt.IRQ_FALLING , ExtInt.PULL_PU, self.setvolumeup, 50)
+        self.downsetvolume = ExtInt(ExtInt.GPIO20, ExtInt.IRQ_FALLING , ExtInt.PULL_PU, self.setvolumedown, 50)     
         self.talk_key = ExtInt(ExtInt.GPIO19, ExtInt.IRQ_RISING_FALLING, ExtInt.PULL_PU, self.on_talk_key_click, 50)
         
         # 初始化 led; write(1) 灭； write(0) 亮
@@ -111,6 +115,14 @@ class Application(object):
         self.__record_thread_stop_event = Event()
         self.__voice_activity_event = Event()
         self.__keyword_spotting_event = Event()
+        
+    def setvolumedown(self,args):
+        print("setvolumedown")
+        return self.audio_manager.setvolume_down()
+    
+    def setvolumeup(self,args):
+        print("setvolumeup")
+        return self.audio_manager.setvolume_up()
 
     def __record_thread_handler(self):
         """纯粹是为了kws&vad能识别才起的线程持续读音频"""
@@ -189,12 +201,15 @@ class Application(object):
         logger.debug("chat process exit.")
 
     def on_talk_key_click(self, args):
+        args[1]=self.gpio19.read()
         logger.info("on_talk_key_click: ", args)
-        if args[1] == 1:
+        if args[1] == 0:
             # 按键按下
+            self.lte_green_led.on()
             self.__voice_activity_event.set()  # 有人声
         else:
             # 按键抬起
+            self.lte_green_led.off()
             self.__voice_activity_event.clear()  # 无人声
         if self.__working_thread is not None and self.__working_thread.is_running():
             return
@@ -243,11 +258,41 @@ class Application(object):
     
     def handle_iot_message(self, msg):
         logger.debug("handle_iot_message: {}".format(msg))
+        
+    def handle_mcp_message(self, msg):
+        # print("msg: ", msg)
+        data=msg.to_bytes()
+
+        # 解析JSON字符串为字典
+        data_dict = json.loads(data)
+        id=1
+        # 提取method内容
+        method = data_dict['payload']['method']
+        if 'id' in data_dict['payload']:
+            id=data_dict['payload']['id']
+        print("MCP请求: ",method)
+        
+        if method == "initialize":
+            self.__protocol.mcp_initialize()
+        elif method == "tools/list":
+            self.__protocol.mcp_tools_list()
+        elif method =="tools/call":
+            handle =data_dict['payload']['params']['name']
+            if handle == "self.setvolume_down()":     
+                print("当前音量大小",self.audio_manager.setvolume_down())
+            elif handle == "self.setvolume_up()":
+                print("当前音量大小",self.audio_manager.setvolume_up())
+            elif handle == "self.setvolume_close()":
+                print("当前音量大小",self.audio_manager.setvolume_close())
+            self.__protocol.mcp_tools_call(tool_name=handle,req_id=id)
+        # raise NotImplementedError("handle_mcp_message not implemented")
 
     def run(self):
         self.charge_manager.enable_charge()
         self.audio_manager.open_opus()
         self.talk_key.enable()
+        self.upsetvolume.enable()
+        self.downsetvolume.enable()
         self.led_power_pin.write(1)
         self.power_red_led.blink(250, 250)
 

@@ -12,20 +12,40 @@ from usr.logging import getLogger
 
 
 logger = getLogger(__name__)
-
+volume = 7
 
 # ==================== 音频管理 ====================
 
 
 class AudioManager(object):
 
-    def __init__(self, channel=0, volume=11, pa_number=29):
+    def __init__(self, channel=0, volume=10, pa_number=29):
         self.aud = audio.Audio(channel)  # 初始化音频播放通道
         self.aud.set_pa(pa_number)
         self.aud.setVolume(volume)  # 设置音量
         self.aud.setCallback(self.audio_cb)
         self.rec = audio.Record(channel)
+        self.rec.gain_set(3,9)
         self.__skip = 0
+        
+    def setvolume_down(self):
+        global volume
+        volume -= 1
+        if volume < 0: volume = 0
+        self.aud.setVolume(volume)
+        return volume
+        
+    def setvolume_up(self):
+        global volume
+        volume += 1
+        if volume > 11: volume = 11
+        self.aud.setVolume(volume)
+        return volume
+    
+    def setvolume_close(self):
+        self.aud.setVolume(0)
+        volume = 0
+        return volume
 
     # ========== 音频文件 ====================
 
@@ -41,6 +61,9 @@ class AudioManager(object):
 
     def play(self, file):
         self.aud.play(0, 1, file)
+        
+    def stop(self):
+        self.aud.stopAll()
 
     # ========= opus ====================
 
@@ -67,11 +90,12 @@ class AudioManager(object):
             
     def set_vad_cb(self, cb):
         def wrapper(state):
-            if self.__skip != 2:
-                self.__skip += 1
-                return
+            # if self.__skip != 2:
+            #     self.__skip += 1
+            #     return
             return cb(state)
-        self.rec.vad_set_callback(wrapper)
+        self._callable = wrapper
+        self.rec.vad_set_callback(self._callable)
 
     def end_cb(self, para):
         if(para[0] == "stream"):
@@ -85,7 +109,8 @@ class AudioManager(object):
             pass
     
     def start_kws(self):
-        self.rec.ovkws_start("_xiao_zhi_xiao_zhi", 0.7)
+        list=["_xiao_zhi_xiao_zhi","_xiao_tian_xiao_tian","_xiao_zi_xiao_zi","_xiao_shi_xiao_shi","_xiao_si_xiao_si","_xiao_zhi_xiao_zi","_xiao_zi_xiao_zhi"]
+        self.rec.ovkws_start(list, 0.7)
 
     def stop_kws(self):
         self.rec.ovkws_stop()
