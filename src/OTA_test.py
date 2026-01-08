@@ -33,6 +33,7 @@ class OTA(object):
         }
         self.url = "https://api.tenclass.net/xiaozhi/ota/"
         # self.url ="http://xiaozhi.pandastroller.com:8002/xiaozhi/ota/"
+        # self.url = "http://101.37.79.117:8003/xiaozhi/ota/"
         self.response = None
         self.UDP_IP = None
         self.UDP_PORT = None

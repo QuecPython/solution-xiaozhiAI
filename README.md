@@ -18,6 +18,12 @@ QuecPython introduces the Xiaozhi Platform AI Chatbot solution. This solution is
 
 This demo uses an AI development board equipped with the EC800MCNLE module.
 
+
+
+**Note: Business access is prohibited when the USB is plugged in. After unplugging the USB, long press the button to start the business. If you need to view the logs, you can connect a USB after startup to view the logs**
+
+
+
 ## Features
 
 - Supports voice interruption/barge-in.

@@ -7,13 +7,15 @@ import dataCall
 import checkNet
 import sys_bus
 from machine import Pin
+from machine import ExtInt
+import osTimer
 from usr.threading import PriorityQueue, Thread
 from usr.logging import getLogger
 
 
 logger = getLogger(__name__)
 volume = 7
-name = '_xiao_zhi_xiao_zhi'
+name = '_xiao_yuan_xiao_yuan'
 # ==================== 音频管理 ====================
 
 
@@ -77,13 +79,13 @@ class AudioManager(object):
     def open_opus(self):
         self.pcm = audio.Audio.PCM(0, 1, 16000, 2, 1, 15)  # 5 -> 25
         self.opus = Opus(self.pcm, 0, 60000)  # 6000 ~ 128000
-    
+
     def close_opus(self):
         self.opus.close()
         self.pcm.close()
         del self.opus
         del self.pcm
-    
+
     def opus_read(self):
         return self.opus.read(60)
 
@@ -120,9 +122,8 @@ class AudioManager(object):
         # print("当前唤醒词：", name)
         return name
     def start_kws(self):
-        # list=["_xiao_zhi_xiao_zhi","_xiao_tian_xiao_tian","_xiao_zi_xiao_zi","_xiao_shi_xiao_shi","_xiao_si_xiao_si","_xiao_zhi_xiao_zi","_xiao_zi_xiao_zhi"]
-        # self.rec.ovkws_start("_xiao_zhi_xiao_zhi", 0.7)
-        self.rec.ovkws_start(name, 0.7)
+        list=["_xiao_tian_xiao_tian",name,"_jiang_gou_jiang_gou"]
+        self.rec.ovkws_start(list, 0.7)
 
 
     def stop_kws(self):
@@ -131,7 +132,7 @@ class AudioManager(object):
     def start_vad(self):
         self.__skip = 0
         self.rec.vad_start()
-    
+
     def stop_vad(self):
         self.rec.vad_stop()
 
@@ -247,3 +248,40 @@ class TaskManager(object):
 
     def submit(self, func, args=(), kwargs={}, priority=0, title="anon"):
         self.__q.put(_Task(target=func, args=args, kwargs=kwargs, priority=priority, title=title))
+        
+       
+       
+
+
+
+class Button(object):
+
+    def __init__(self, gpio_number, delay=3000, long_press_callback=lambda: None, short_press_callback=lambda: None):
+        self.key = ExtInt(getattr(ExtInt, "GPIO{}".format(gpio_number)), ExtInt.IRQ_RISING_FALLING, ExtInt.PULL_PU, self.__callback, 150)
+        self.key.enable()
+        self.delay = delay
+        self.timer = osTimer()
+        self.start_time = None
+        self.end_time = None
+        self.long_press_callback = long_press_callback
+        self.short_press_callback = short_press_callback
+        self.is_pressed = False  # 状态变量：按键是否被按下
+        
+        
+    def __callback(self, args):
+        gpio_number, mode = args
+        if not self.is_pressed:
+            # 下降沿，按下
+            print("按键按下")
+            self.is_pressed = True
+            self.start_time = utime.ticks_ms()
+            self.timer.start(self.delay, 0, lambda args: self.long_press_callback())
+        elif self.is_pressed:
+            # 上升沿，释放
+            print("按键释放")
+            self.is_pressed = False
+            self.timer.stop()
+            self.end_time = utime.ticks_ms()
+            duration = utime.ticks_diff(self.end_time, self.start_time)
+            if duration < self.delay:
+                self.short_press_callback()
