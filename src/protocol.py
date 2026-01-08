@@ -79,7 +79,7 @@ class WebSocketClient(object):
         self.__json_message_handler = None
         self.__last_text_value = None
         logger.info("OTA:{}".format(WSS_HOST))
-        
+        self.connect_flag = True
 
     def __str__(self):
         return "{}(host=\"{}\")".format(type(self).__name__, self.host)
@@ -162,10 +162,12 @@ class WebSocketClient(object):
                 raw = self.recv()
             except Exception as e:
                 logger.info("{} recv thread break, Exception details: {}".format(self, repr(e)))
+                self.connect_flag = False
                 break
             
             if raw is None or raw == "":
                 logger.info("{} recv thread break, Exception details: read none bytes, websocket disconnect".format(self))
+                self.connect_flag = False
                 break
             
             try:

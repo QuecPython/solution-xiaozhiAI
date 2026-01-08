@@ -185,10 +185,11 @@ class Application(object):
         self.__keyword_spotting_event.wait()
         self.stop_kws()
         t.join()
-        self.start_kws()
+        # self.start_kws()
 
     def __chat_process(self):
         global name
+        self.__protocol.connect_flag = True
         self.power_green_led.on()
         self.start_vad()
         try:
@@ -216,7 +217,8 @@ class Application(object):
                         if is_listen_flag:
                             self.__protocol.listen("stop")
                             is_listen_flag = False
-                    if not self.__protocol.is_state_ok():
+                    if not self.__protocol.is_state_ok or self.__protocol.connect_flag == False:
+                        print("连接断开，退出聊天流程",self.__protocol.connect_flag)
                         break
                     utime.sleep_ms(5)
                     # logger.debug("read opus data length: {}".format(len(data)))
